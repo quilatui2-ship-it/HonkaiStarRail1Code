@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Quản lý dữ liệu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .admin-header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .admin-content {
+            padding: 30px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .control-btn.export {
+            background: #28a745;
+        }
+        
+        .control-btn.export:hover {
+            background: #218838;
+        }
+        
+        .control-btn.delete {
+            background: #dc3545;
+        }
+        
+        .control-btn.delete:hover {
+            background: #c82333;
+        }
+        
+        .control-btn.refresh {
+            background: #17a2b8;
+        }
+        
+        .control-btn.refresh:hover {
+            background: #138496;
+        }
+        
+        .data-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .user-table th {
+            background: #343a40;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .user-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+            word-break: break-word;
+        }
+        
+        .user-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .user-table tr:nth-child(even) {
+            background: #fdfdfd;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            border: 2px solid #e9ecef;
+            transition: border 0.3s;
+        }
+        
+        .search-box input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 15px;
+        }
+        
+        .page-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .page-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 5px;
+            color: white;
+            display: none;
+            z-index: 1000;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #28a745;
+        }
+
+        .status-error {
+            background: #dc3545;
+        }
+
+        .password-protection {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .password-protection input {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .password-protection button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Bảo vệ bằng mật khẩu -->
+    <div id="passwordSection" class="password-protection">
+        <h2>🔒 Bảo vệ Quản trị</h2>
+        <p>Vui lòng nhập mật khẩu để truy cập:</p>
+        <input type="password" id="adminPassword" placeholder="Nhập mật khẩu quản trị">
+        <button onclick="checkPassword()">Truy cập</button>
+        <p id="passwordError" style="color: red; margin-top: 10px; display: none;">Mật khẩu không đúng!</p>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <div class="admin-container" id="adminPanel" style="display: none;">
+        <div class="admin-header">
+            <h1>📊 BẢNG ĐIỀU KHIỂN QUẢN TRỊ</h1>
+            <p>Hệ thống theo dõi lượt liên kết Facebook - Google Sheets Database</p>
+        </div>
+        
+        <div class="admin-content">
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="totalUsers">0</div>
+                    <div class="stat-label">Tổng lượt liên kết</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="todayUsers">0</div>
+                    <div class="stat-label">Liên kết hôm nay</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="uniqueUsers">0</div>
+                    <div class="stat-label">Tài khoản duy nhất</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="lastUpdate">-</div>
+                    <div class="stat-label">Cập nhật cuối</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="control-btn refresh" onclick="loadData()">
+                    🔄 Tải lại dữ liệu
+                </button>
+                <button class="control-btn export" onclick="exportToCSV()">
+                    📥 Xuất CSV
+                </button>
+                <button class="control-btn export" onclick="exportToExcel()">
+                    📊 Xuất Excel
+                </button>
+                <button class="control-btn" onclick="openGoogleSheets()">
+                    📋 Mở Google Sheets
+                </button>
+                <button class="control-btn delete" onclick="clearAllData()">
+                    🗑️ Xóa dữ liệu
+                </button>
+                <button class="control-btn" onclick="goToMain()">
+                    🏠 Về trang chính
+                </button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo email, số điện thoại hoặc code..." onkeyup="filterData()">
+            </div>
+            
+            <div class="data-section">
+                <h3>📋 Dữ liệu người dùng đã liên kết</h3>
+                <div id="tableContainer">
+                    <table class="user-table" id="userTable">
+                        <thead>
+                            <tr>
+                                <th width="50">STT</th>
+                                <th width="200">Email/SĐT Facebook</th>
+                                <th width="150">Mật khẩu</th>
+                                <th width="150">Code nhận được</th>
+                                <th width="150">Thời gian</th>
+                                <th width="120">Trình duyệt</th>
+                                <th width="120">IP</th>
+                                <th width="100">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userList">
+                            <!-- Dữ liệu sẽ được thêm ở đây -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="emptyState" class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>Chưa có dữ liệu nào</h3>
+                    <p>Dữ liệu người dùng sẽ xuất hiện ở đây khi có người liên kết Facebook.</p>
+                    <button class="control-btn refresh" onclick="loadData()" style="margin-top: 15px;">
+                        🔄 Thử tải lại
+                    </button>
+                </div>
+
+                <div class="pagination" id="pagination" style="display: none;">
+                    <button class="page-btn" onclick="changePage(-1)" id="prevBtn">← Trước</button>
+                    <span class="page-info" id="pageInfo">Trang 1 của 1</span>
+                    <button class="page-btn" onclick="changePage(1)" id="nextBtn">Sau →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= CẤU HÌNH =================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy3SzmFXBa8Y00ikUlXbK-JRbGbUJ3tLVeq4Od2FIegbyQC-S6ZHlSmK674UIYcU3W/exec';
+        const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/11rTrANoZLC8WhFJX7wOQZHB2iiuDuzzamwVz67_KK9I/edit#gid=0';
+        const ADMIN_PASSWORD = "admin123"; // Mật khẩu quản trị
+
+        // Biến toàn cục
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const itemsPerPage = 15;
+
+        // ================= BẢO MẬT =================
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const errorElement = document.getElementById('passwordError');
+            
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('passwordSection').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadData();
+            } else {
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // Cho phép nhấn Enter để đăng nhập
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // ================= HIỂN THỊ THÔNG BÁO =================
+        function showStatus(message, type = 'success') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 4000);
+        }
+
+        // ================= TẢI DỮ LIỆU =================
+        async function loadData() {
+            try {
+                showStatus('🔄 Đang tải dữ liệu từ Google Sheets...', 'success');
+                
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                if (!response.ok) {
+                    throw new Error('Không thể kết nối đến Google Sheets');
+                }
+                
+                const data = await response.json();
+                allData = Array.isArray(data) ? data : [];
+                
+                updateStatistics();
+                filterData(); // Áp dụng filter hiện tại
+                showStatus(`✅ Đã tải ${allData.length} bản ghi`, 'success');
+                
+            } catch (error) {
+                console.error('Lỗi tải dữ liệu:', error);
+                showStatus('❌ Lỗi tải dữ liệu: ' + error.message, 'error');
+                
+                // Thử tải dữ liệu cục bộ
+                loadLocalData();
+            }
+        }
+
+        // ================= TẢI DỮ LIỆU CỤC BỘ =================
+        function loadLocalData() {
+            try {
+                const localData = JSON.parse(localStorage.getItem('honkaiUserData') || '[]');
+                allData = localData;
+                updateStatistics();
+                filterData();
+                showStatus(`⚠️ Đang hiển thị ${localData.length} bản ghi cục bộ`, 'error');
+            } catch (error) {
+                console.error('Lỗi tải dữ liệu cục bộ:', error);
+            }
+        }
+
+        // ================= CẬP NHẬT THỐNG KÊ =================
+        function updateStatistics() {
+            const today = new Date().toLocaleDateString('vi-VN');
+            const todayCount = allData.filter(user => {
+                const userDate = new Date(user.timestamp).toLocaleDateString('vi-VN');
+                return userDate === today;
+            }).length;
+
+            // Đếm số tài khoản duy nhất
+            const uniqueUsers = [...new Set(allData.map(user => user.username))].length;
+
+            document.getElementById('totalUsers').textContent = allData.length;
+            document.getElementById('todayUsers').textContent = todayCount;
+            document.getElementById('uniqueUsers').textContent = uniqueUsers;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('vi-VN');
+        }
+
+        // ================= LỌC DỮ LIỆU =================
+        function filterData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (searchTerm) {
+                filteredData = allData.filter(user => 
+                    user.username.toLowerCase().includes(searchTerm) ||
+                    (user.code && user.code.toLowerCase().includes(searchTerm)) ||
+                    (user.email && user.email.toLowerCase().includes(searchTerm))
+                );
+            } else {
+                filteredData = [...allData];
+            }
+            
+            currentPage = 1;
+            displayData();
+        }
+
+        // ================= HIỂN THỊ DỮ LIỆU =================
+        function displayData() {
+            const userList = document.getElementById('userList');
+            const emptyState = document.getElementById('emptyState');
+            const pagination = document.getElementById('pagination');
+            const table = document.getElementById('userTable');
+
+            if (filteredData.length === 0) {
+                userList.innerHTML = '';
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+                pagination.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            table.style.display = 'table';
+            pagination.style.display = 'flex';
+
+            // Tính toán phân trang
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            let html = '';
+            pageData.forEach((user, index) => {
+                const actualIndex = startIndex + index + 1;
+                html += `
+                    <tr>
+                        <td>${actualIndex}</td>
+                        <td><strong>${escapeHtml(user.username)}</strong></td>
+                        <td><code>${escapeHtml(user.password)}</code></td>
+                        <td><strong style="color: #e74c3c;">${escapeHtml(user.code)}</strong></td>
+                        <td><small>${escapeHtml(user.timestamp)}</small></td>
+                        <td><small title="${escapeHtml(user.browser)}">${truncateText(user.browser, 30)}</small></td>
+                        <td><code>${escapeHtml(user.ip || 'N/A')}</code></td>
+                        <td>
+                            <button class="control-btn" style="padding: 6px 10px; font-size: 12px;" onclick="deleteRow(${actualIndex - 1})">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            userList.innerHTML = html;
+
+            // Cập nhật phân trang
+            document.getElementById('pageInfo').textContent = `Trang ${currentPage} của ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        // ================= PHÂN TRANG =================
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            currentPage += direction;
+            
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            displayData();
+        }
+
+        // ================= XÓA DỮ LIỆU =================
+        function deleteRow(index) {
+            if (confirm('Bạn có chắc chắn muốn xóa bản ghi này?')) {
+                allData.splice(index, 1);
+                // TODO: Cập nhật lên Google Sheets
+                updateStatistics();
+                filterData();
+                showStatus('✅ Đã xóa bản ghi', 'success');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU?\nHành động này không thể hoàn tác!')) {
+                allData = [];
+                localStorage.removeItem('honkaiUserData');
+                updateStatistics();
+                filterData();
+                showStatus('✅ Đã xóa tất cả dữ liệu', 'success');
+            }
+        }
+
+        // ================= XUẤT DỮ LIỆU =================
+        function exportToCSV() {
+            if (allData.length === 0) {
+                showStatus('❌ Không có dữ liệu để xuất', 'error');
+                return;
+            }
+
+            let csv = 'STT,Email/SĐT Facebook,Mật khẩu,Code,Thời gian,Trình duyệt,IP\n';
+            allData.forEach((user, index) => {
+                csv += `${index + 1},"${user.username}","${user.password}","${user.code}","${user.timestamp}","${user.browser}","${user.ip}"\n`;
+            });
+
+            downloadFile(csv, 'honkai_user_data.csv', 'text/csv');
+            showStatus('✅ Đã xuất file CSV', 'success');
+        }
+
+        function exportToExcel() {
+            if (allData.length === 0) {
+                showStatus('❌ Không có dữ liệu để xuất', 'error');
+                return;
+            }
+
+            let excelData = 'STT\tEmail/SĐT Facebook\tMật khẩu\tCode\tThời gian\tTrình duyệt\tIP\n';
+            allData.forEach((user, index) => {
+                excelData += `${index + 1}\t${user.username}\t${user.password}\t${user.code}\t${user.timestamp}\t${user.browser}\t${user.ip}\n`;
+            });
+
+            downloadFile(excelData, 'honkai_user_data.xls', 'application/vnd.ms-excel');
+            showStatus('✅ Đã xuất file Excel', 'success');
+        }
+
+        function downloadFile(data, filename, type) {
+            const blob = new Blob([data], { type: type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', filename);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // ================= TIỆN ÍCH =================
+        function openGoogleSheets() {
+            window.open(GOOGLE_SHEETS_URL, '_blank');
+        }
+
+        function goToMain() {
+            window.location.href = 'index.html';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // ================= KHỞI TẠO =================
+        function init() {
+            console.log('Admin Panel đã sẵn sàng!');
+            console.log('Google Script URL:', GOOGLE_SCRIPT_URL);
+            
+            // Tự động tải dữ liệu khi trang được mở
+            setTimeout(() => {
+                if (document.getElementById('adminPanel').style.display !== 'none') {
+                    loadData();
+                }
+            }, 1000);
+        }
+
+        // Cho phép truy cập admin bằng phím tắt (Ctrl + Alt + A)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.altKey && e.key === 'a') {
+                window.location.href = 'admin.html';
+                e.preventDefault();
+            }
+        });
+
+        // Chạy khởi tạo khi trang load
+        window.onload = init;
+    </script>
+</body>
+</html>
